@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getBorrows, getBookById, getUserById, returnBook, getUsers, getBooks, borrowBook } from '../store';
+import { getBorrowsAsync, getBookByIdAsync, getUserByIdAsync, returnBookAsync, getUsersAsync, refreshBooksCache, borrowBookAsync } from '../store';
 import { Book, BorrowRecord, User } from '../types';
 
 export default function AdminBorrowsPage() {
@@ -15,6 +15,7 @@ export default function AdminBorrowsPage() {
   const [manualBorrowUserId, setManualBorrowUserId] = useState('');
   const [showManualBorrow, setShowManualBorrow] = useState(false);
   const [allBooks, setAllBooks] = useState<Book[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -24,33 +25,36 @@ export default function AdminBorrowsPage() {
     refreshData();
   }, [user]);
 
-  const refreshData = () => {
-    const allBorrows = getBorrows();
+  const refreshData = async () => {
+    const allBorrows = await getBorrowsAsync();
     setBorrows(allBorrows);
 
     const bookMap = new Map<string, Book>();
     const userMap = new Map<string, User>();
 
-    allBorrows.forEach((b) => {
-      const book = getBookById(b.bookId);
+    for (const b of allBorrows) {
+      const book = await getBookByIdAsync(b.bookId);
       if (book) bookMap.set(b.bookId, book);
-      const u = getUserById(b.userId);
+      const u = await getUserByIdAsync(b.userId);
       if (u) userMap.set(b.userId, u);
-    });
+    }
 
     setBooks(bookMap);
     setUsers(userMap);
-    setAllBooks(getBooks().filter(b => b.availableCopies > 0));
+    const allBooksList = await refreshBooksCache();
+    setAllBooks(allBooksList.filter((b: Book) => b.availableCopies > 0));
+    const allUsersList = await getUsersAsync();
+    setAllUsers(allUsersList.filter((u: User) => u.role === 'member'));
   };
 
-  const handleReturn = (borrowId: string) => {
-    returnBook(borrowId);
+  const handleReturn = async (borrowId: string) => {
+    await returnBookAsync(borrowId);
     refreshData();
   };
 
-  const handleManualBorrow = () => {
+  const handleManualBorrow = async () => {
     if (!manualBorrowBookId || !manualBorrowUserId) return;
-    borrowBook(manualBorrowBookId, manualBorrowUserId);
+    await borrowBookAsync(manualBorrowBookId);
     setShowManualBorrow(false);
     setManualBorrowBookId('');
     setManualBorrowUserId('');
@@ -127,7 +131,7 @@ export default function AdminBorrowsPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">-- Pilih Anggota --</option>
-                  {getUsers().filter(u => u.role === 'member').map((u) => (
+                  {allUsers.map((u) => (
                     <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                   ))}
                 </select>

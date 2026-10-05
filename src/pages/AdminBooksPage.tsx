@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getBooks, deleteBook } from '../store';
+import { refreshBooksCache, deleteBook } from '../store';
 import { Book } from '../types';
 
 export default function AdminBooksPage() {
@@ -16,12 +16,13 @@ export default function AdminBooksPage() {
       navigate('/login');
       return;
     }
-    setBooks(getBooks());
+    refreshBooksCache().then(setBooks);
   }, [user]);
 
-  const handleDelete = (id: string) => {
-    deleteBook(id);
-    setBooks(getBooks());
+  const handleDelete = async (id: string) => {
+    await deleteBook(id);
+    const updated = await refreshBooksCache();
+    setBooks(updated);
     setDeleteConfirm(null);
   };
 

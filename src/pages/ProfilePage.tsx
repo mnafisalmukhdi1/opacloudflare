@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { getBorrowsByUser, getBookById, returnBook } from '../store';
+import { getBorrowsByUserAsync, getBookByIdAsync, returnBookAsync } from '../store';
 import { Book, BorrowRecord } from '../types';
 
 export default function ProfilePage() {
@@ -15,28 +15,31 @@ export default function ProfilePage() {
       navigate('/login');
       return;
     }
-    const userBorrows = getBorrowsByUser(user.id);
-    setBorrows(userBorrows);
+    const loadData = async () => {
+      const userBorrows = await getBorrowsByUserAsync(user.id);
+      setBorrows(userBorrows);
 
-    const bookMap = new Map<string, Book>();
-    userBorrows.forEach((b) => {
-      const book = getBookById(b.bookId);
-      if (book) bookMap.set(b.bookId, book);
-    });
-    setBooks(bookMap);
+      const bookMap = new Map<string, Book>();
+      for (const b of userBorrows) {
+        const book = await getBookByIdAsync(b.bookId);
+        if (book) bookMap.set(b.bookId, book);
+      }
+      setBooks(bookMap);
+    };
+    loadData();
   }, [user]);
 
-  const handleReturn = (borrowId: string) => {
-    returnBook(borrowId);
+  const handleReturn = async (borrowId: string) => {
+    await returnBookAsync(borrowId);
     // Refresh
     if (user) {
-      const userBorrows = getBorrowsByUser(user.id);
+      const userBorrows = await getBorrowsByUserAsync(user.id);
       setBorrows(userBorrows);
       const bookMap = new Map<string, Book>();
-      userBorrows.forEach((b) => {
-        const book = getBookById(b.bookId);
+      for (const b of userBorrows) {
+        const book = await getBookByIdAsync(b.bookId);
         if (book) bookMap.set(b.bookId, book);
-      });
+      }
       setBooks(bookMap);
     }
   };

@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from './types';
-import { getCurrentUser, loginUser, logoutUser, registerUser, initializeData } from './store';
+import { getCurrentUser, loginUser, loginUserAsync, logoutUser, registerUser, registerUserAsync, initializeData, isApiAvailable } from './store';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => User | null;
+  login: (email: string, password: string) => Promise<User | null>;
   logout: () => void;
-  register: (user: User) => void;
+  register: (data: { name: string; email: string; password: string; phone?: string; address?: string }) => Promise<{ id: string }>;
   refreshUser: () => void;
+  apiMode: 'api' | 'local';
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -20,8 +21,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(getCurrentUser());
   }, []);
 
-  const login = (email: string, password: string) => {
-    const u = loginUser(email, password);
+  const login = async (email: string, password: string) => {
+    let u: User | null;
+    if (isApiAvailable()) {
+      u = await loginUserAsync(email, password);
+    } else {
+      u = loginUser(email, password);
+    }
     if (u) setUser(u);
     return u;
   };
@@ -31,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const register = (newUser: User) => {
-    registerUser(newUser);
+  const register = async (data: { name: string; email: string; password: string; phone?: string; address?: string }) => {
+    return await registerUserAsync(data);
   };
 
   const refreshUser = () => {
@@ -40,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, logout, register, refreshUser, apiMode: isApiAvailable() ? 'api' : 'local' }}>
       {children}
     </AuthContext.Provider>
   );

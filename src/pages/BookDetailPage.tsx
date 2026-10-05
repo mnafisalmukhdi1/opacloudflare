@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBookById, borrowBook, getBorrowsByBook, getBorrowsByUser } from '../store';
+import { getBookById, getBookByIdAsync, borrowBookAsync, getBorrowsByBookAsync, getBorrowsByUserAsync, refreshBooksCache } from '../store';
 import { Book, BorrowRecord } from '../types';
 import { useAuth } from '../AuthContext';
 
@@ -15,15 +15,19 @@ export default function BookDetailPage() {
 
   useEffect(() => {
     if (id) {
-      const b = getBookById(id);
-      if (b) {
-        setBook(b);
-        setBorrows(getBorrowsByBook(id));
-      }
+      const loadBook = async () => {
+        const b = await getBookByIdAsync(id);
+        if (b) {
+          setBook(b);
+          const borrows = await getBorrowsByBookAsync(id);
+          setBorrows(borrows);
+        }
+      };
+      loadBook();
     }
   }, [id]);
 
-  const handleBorrow = () => {
+  const handleBorrow = async () => {
     if (!user) {
       navigate('/login');
       return;
@@ -32,9 +36,9 @@ export default function BookDetailPage() {
     if (!book) return;
 
     // Check if user already borrowing this book
-    const userBorrows = getBorrowsByUser(user.id);
+    const userBorrows = await getBorrowsByUserAsync(user.id);
     const alreadyBorrowed = userBorrows.some(
-      (b) => b.bookId === book.id && b.status === 'borrowed'
+      (b: BorrowRecord) => b.bookId === book.id && b.status === 'borrowed'
     );
 
     if (alreadyBorrowed) {
@@ -47,14 +51,19 @@ export default function BookDetailPage() {
       return;
     }
 
-    borrowBook(book.id, user.id);
-    setBorrowSuccess('Buku berhasil dipinjam! Silakan ambil di perpustakaan.');
-    setBorrowError('');
+    try {
+      await borrowBookAsync(book.id);
+      setBorrowSuccess('Buku berhasil dipinjam! Silakan ambil di perpustakaan.');
+      setBorrowError('');
 
-    // Refresh book data
-    const updated = getBookById(book.id);
-    if (updated) setBook(updated);
-    setBorrows(getBorrowsByBook(book.id));
+      // Refresh book data
+      const updated = await getBookByIdAsync(book.id);
+      if (updated) setBook(updated);
+      const borrows = await getBorrowsByBookAsync(book.id);
+      setBorrows(borrows);
+    } catch (err: any) {
+      setBorrowError(err.message || 'Gagal meminjam buku.');
+    }
   };
 
   if (!book) {

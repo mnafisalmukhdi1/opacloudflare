@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBooks } from '../store';
+import { getBooks, refreshBooksCache } from '../store';
 
 export default function HomePage() {
   const [query, setQuery] = useState('');
+  const [books, setBooks] = useState(() => getBooks());
   const navigate = useNavigate();
-  const books = getBooks();
+
+  React.useEffect(() => {
+    refreshBooksCache().then(setBooks);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

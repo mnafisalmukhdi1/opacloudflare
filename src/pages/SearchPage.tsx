@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { searchBooks, getBooks } from '../store';
+import { searchBooks, searchBooksAsync, getBooks, refreshBooksCache } from '../store';
 import { Book } from '../types';
 
 export default function SearchPage() {
@@ -13,11 +13,16 @@ export default function SearchPage() {
   useEffect(() => {
     const q = searchParams.get('q') || '';
     setQuery(q);
-    if (q) {
-      setResults(searchBooks(q));
-    } else {
-      setResults(getBooks());
-    }
+    const loadResults = async () => {
+      if (q) {
+        const data = await searchBooksAsync(q);
+        setResults(data);
+      } else {
+        const data = await refreshBooksCache();
+        setResults(data);
+      }
+    };
+    loadResults();
   }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {

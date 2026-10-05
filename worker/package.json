@@ -1,0 +1,15 @@
+{
+  "name": "opac-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute opac-db --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0",
+    "@cloudflare/workers-types": "^4.20241205.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addBook } from '../store';
+import { addBook as addBookStore } from '../store';
 import { Book } from '../types';
 import { useAuth } from '../AuthContext';
 
@@ -85,7 +85,7 @@ export default function AddBookPage() {
     setLoading(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title || !isbn) {
@@ -110,7 +110,7 @@ export default function AddBookPage() {
       addedDate: new Date().toISOString().split('T')[0],
     };
 
-    addBook(newBook);
+    await addBookStore(newBook);
     setSuccessMsg('Buku berhasil ditambahkan ke katalog!');
     setApiError('');
 

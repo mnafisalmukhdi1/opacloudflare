@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import { User } from '../types';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,10 +15,10 @@ export default function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const user = login(email, password);
+    const user = await login(email, password);
     if (user) {
       navigate(user.role === 'admin' ? '/admin/borrows' : '/profile');
     } else {
@@ -27,7 +26,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -37,23 +36,16 @@ export default function LoginPage() {
       return;
     }
 
-    const newUser: User = {
-      id: `user_${Date.now()}`,
-      name,
-      email,
-      password,
-      role: 'member',
-      memberSince: new Date().toISOString().split('T')[0],
-      phone,
-      address,
-    };
-
-    register(newUser);
-    setSuccess('Pendaftaran berhasil! Silakan login.');
-    setIsLogin(true);
-    setName('');
-    setPhone('');
-    setAddress('');
+    try {
+      await register({ name, email, password, phone, address });
+      setSuccess('Pendaftaran berhasil! Silakan login.');
+      setIsLogin(true);
+      setName('');
+      setPhone('');
+      setAddress('');
+    } catch (err: any) {
+      setError(err.message || 'Gagal mendaftar.');
+    }
   };
 
   return (

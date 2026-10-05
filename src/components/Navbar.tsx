@@ -2,10 +2,12 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { User } from '../types';
+import { isApiAvailable } from '../store';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const apiMode = isApiAvailable();
 
   const handleLogout = () => {
     logout();
@@ -19,6 +21,11 @@ export default function Navbar() {
           <Link to="/" className="flex items-center space-x-2">
             <span className="material-icons text-3xl text-amber-400">local_library</span>
             <span className="text-xl font-bold">Perpustakaan Digital</span>
+            <span className={`hidden sm:inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+              apiMode ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
+            }`}>
+              {apiMode ? '☁ Cloud' : '💾 Local'}
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
